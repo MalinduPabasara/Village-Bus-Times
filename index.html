@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Village Bus Notification App</title>
+  <meta name="description" content="Track bus arrivals and departures in real-time">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚌</text></svg>">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(var(--border))",
+            input: "hsl(var(--input))",
+            ring: "hsl(var(--ring))",
+            background: "hsl(var(--background))",
+            foreground: "hsl(var(--foreground))",
+            primary: {
+              DEFAULT: "hsl(var(--primary))",
+              foreground: "hsl(var(--primary-foreground))",
+            },
+            secondary: {
+              DEFAULT: "hsl(var(--secondary))",
+              foreground: "hsl(var(--secondary-foreground))",
+            },
+            destructive: {
+              DEFAULT: "hsl(var(--destructive))",
+              foreground: "hsl(var(--destructive-foreground))",
+            },
+            muted: {
+              DEFAULT: "hsl(var(--muted))",
+              foreground: "hsl(var(--muted-foreground))",
+            },
+            accent: {
+              DEFAULT: "hsl(var(--accent))",
+              foreground: "hsl(var(--accent-foreground))",
+            },
+            popover: {
+              DEFAULT: "hsl(var(--popover))",
+              foreground: "hsl(var(--popover-foreground))",
+            },
+            card: {
+              DEFAULT: "hsl(var(--card))",
+              foreground: "hsl(var(--card-foreground))",
+            },
+          },
+          borderRadius: {
+            lg: "var(--radius)",
+            md: "calc(var(--radius) - 2px)",
+            sm: "calc(var(--radius) - 4px)",
+          },
+        },
+      },
+    }
+  </script>
+  
+  <!-- CSS Variables -->
+  <style>
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 222.2 84% 4.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 222.2 84% 4.9%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 222.2 84% 4.9%;
+      --primary: 221.2 83.2% 53.3%;
+      --primary-foreground: 210 40% 98%;
+      --secondary: 210 40% 96.1%;
+      --secondary-foreground: 222.2 47.4% 11.2%;
+      --muted: 210 40% 96.1%;
+      --muted-foreground: 215.4 16.3% 46.9%;
+      --accent: 210 40% 96.1%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 214.3 31.8% 91.4%;
+      --input: 214.3 31.8% 91.4%;
+      --ring: 221.2 83.2% 53.3%;
+      --radius: 0.5rem;
+    }
+
+    .dark {
+      --background: 222.2 84% 4.9%;
+      --foreground: 210 40% 98%;
+      --card: 222.2 84% 4.9%;
+      --card-foreground: 210 40% 98%;
+      --popover: 222.2 84% 4.9%;
+      --popover-foreground: 210 40% 98%;
+      --primary: 217.2 91.2% 59.8%;
+      --primary-foreground: 222.2 47.4% 11.2%;
+      --secondary: 217.2 32.6% 17.5%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217.2 32.6% 17.5%;
+      --muted-foreground: 215 20.2% 65.1%;
+      --accent: 217.2 32.6% 17.5%;
+      --accent-foreground: 210 40% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 210 40% 98%;
+      --border: 217.2 32.6% 17.5%;
+      --input: 217.2 32.6% 17.5%;
+      --ring: 224.3 76.3% 48%;
+    }
+    
+    * {
+      border-color: hsl(var(--border));
+    }
+    
+    body {
+      background-color: hsl(var(--background));
+      color: hsl(var(--foreground));
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+  </style>
+  
+  <!-- React and ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <div id="root">
+    <!-- Loading state -->
+    <div class="min-h-screen flex items-center justify-center">
+      <div class="text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
+        <p class="mt-4 text-lg">Loading Bus Schedule...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Bus schedule data
+    const busSchedule = {
+      galle: [
+        { time: "04:10", operator: "Private" },
+        { time: "04:40", operator: "CTB" },
+        { time: "05:40", operator: "CTB" },
+        { time: "06:10", operator: "CTB" },
+        { time: "06:35", operator: "CTB" },
+        { time: "07:00", operator: "CTB" },
+        { time: "07:45", operator: "Private" },
+        { time: "08:25", operator: "Private" },
+        { time: "10:30", operator: "CTB" },
+        { time: "11:20", operator: "CTB" },
+        { time: "11:50", operator: "Private" },
+        { time: "12:45", operator: "Private" },
+        { time: "13:25", operator: "CTB" },
+        { time: "15:05", operator: "Private" },
+        { time: "16:40", operator: "CTB" },
+      ],
+      udugama: [
+        { time: "04:55", operator: "Private" },
+        { time: "05:15", operator: "Private" },
+        { time: "07:20", operator: "CTB" },
+        { time: "08:05", operator: "CTB" },
+        { time: "08:45", operator: "CTB" },
+        { time: "09:10", operator: "Private" },
+        { time: "09:35", operator: "CTB" },
+        { time: "10:00", operator: "Private" },
+        { time: "10:55", operator: "Private" },
+        { time: "12:20", operator: "CTB" },
+        { time: "13:10", operator: "CTB" },
+        { time: "13:40", operator: "CTB" },
+        { time: "14:10", operator: "Private" },
+        { time: "14:40", operator: "CTB" },
+        { time: "15:30", operator: "Private" },
+        { time: "15:55", operator: "CTB" },
+        { time: "16:10", operator: "CTB" },
+        { time: "17:05", operator: "Private" },
+        { time: "17:35", operator: "CTB" },
+        { time: "18:20", operator: "CTB" },
+      ],
+      dellawa: [
+        { time: "06:30", operator: "Private" },
+        { time: "06:50", operator: "CTB" },
+        { time: "07:30", operator: "Private" },
+        { time: "07:50", operator: "CTB" },
+        { time: "08:15", operator: "Private" },
+        { time: "08:40", operator: "CTB" },
+        { time: "09:05", operator: "Private" },
+        { time: "09:50", operator: "CTB" },
+        { time: "10:10", operator: "Private" },
+        { time: "11:10", operator: "Private" },
+        { time: "11:50", operator: "Private" },
+        { time: "12:20", operator: "CTB" },
+        { time: "13:10", operator: "Private" },
+        { time: "13:40", operator: "CTB" },
+        { time: "14:05", operator: "CTB" },
+        { time: "14:25", operator: "Private" },
+        { time: "14:40", operator: "Private" },
+        { time: "15:05", operator: "CTB" },
+        { time: "15:30", operator: "CTB" },
+        { time: "15:50", operator: "Private" },
+        { time: "16:20", operator: "CTB" },
+        { time: "16:45", operator: "Private" },
+        { time: "17:10", operator: "CTB" },
+        { time: "17:35", operator: "Private" },
+        { time: "18:35", operator: "CTB" },
+        { time: "19:25", operator: "CTB" },
+        { time: "20:20", operator: "CTB" },
+        { time: "21:40", operator: "CTB" },
+      ],
+    };
+
+    // Location arrival time adjustments (in minutes)
+    const locationAdjustments = {
+      neluwa: { galle: 0, udugama: 0, dellawa: 0 },
+      mawanana: { galle: 5, udugama: 10, dellawa: -5 },
+      suduallawa: { galle: 15, udugama: 20, dellawa: -10 },
+      habarkada: { galle: 20, udugama: 25, dellawa: -20 },
+      thawalama: { galle: 30, udugama: 35, dellawa: -30 },
+    };
+
+    // Location display names
+    const locationNames = {
+      neluwa: "Neluwa",
+      mawanana: "Mawanana",
+      suduallawa: "Suduallawa",
+      habarkada: "Habarkada",
+      thawalama: "Thawalama",
+    };
+
+    // Route display names and colors
+    const routeInfo = {
+      galle: { name: "Galle", color: "bg-emerald-500" },
+      udugama: { name: "Udugama", color: "bg-blue-500" },
+      dellawa: { name: "Dellawa", color: "bg-amber-500" },
+    };
+
+    // Parse time string to minutes since midnight
+    function parseTimeToMinutes(timeStr) {
+      const [hours, minutes] = timeStr.split(":").map(Number);
+      return hours * 60 + minutes;
+    }
+
+    // Format minutes since midnight to time string
+    function formatMinutesToTime(minutes) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+    }
+
+    // Format time for display
+    function formatTime(date) {
+      return date.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+
+    // Format date for display
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
+    // Get minutes until arrival
+    function getMinutesUntil(timeStr, currentTime) {
+      const targetMinutes = parseTimeToMinutes(timeStr);
+      const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+      return targetMinutes - currentMinutes;
+    }
+
+    // Format minutes until arrival for display
+    function formatMinutesUntil(minutes) {
+      if (minutes <= 0) return "Departed";
+
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+
+      if (hours > 0) {
+        return `${hours}h ${mins}m`;
+      }
+      return `${mins} min`;
+    }
+
+    // Calculate arrival time based on location and route
+    function calculateArrivalTime(departureTime, route, location) {
+      const departureMinutes = parseTimeToMinutes(departureTime);
+      const adjustmentMinutes = locationAdjustments[location][route];
+      const arrivalMinutes = departureMinutes + adjustmentMinutes;
+      return formatMinutesToTime(arrivalMinutes);
+    }
+
+    // Find next buses based on filter
+    function getNextBuses(filter, location, currentTime) {
+      const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+      const allBuses = [];
+
+      // Combine all routes with route name
+      Object.entries(busSchedule).forEach(([route, buses]) => {
+        if (
+          filter === "all" ||
+          filter === route ||
+          (filter === "ctb" && buses.some((bus) => bus.operator === "CTB")) ||
+          (filter === "private" && buses.some((bus) => bus.operator === "Private"))
+        ) {
+          buses.forEach((bus) => {
+            if (filter === "ctb" && bus.operator !== "CTB") return;
+            if (filter === "private" && bus.operator !== "Private") return;
+
+            const departureMinutes = parseTimeToMinutes(bus.time);
+            const adjustmentMinutes = locationAdjustments[location][route];
+            const arrivalMinutes = departureMinutes + adjustmentMinutes;
+
+            allBuses.push({
+              route,
+              departureTime: bus.time,
+              arrivalTime: formatMinutesToTime(arrivalMinutes),
+              operator: bus.operator,
+              departureMinutes,
+              arrivalMinutes,
+            });
+          });
+        }
+      });
+
+      // Sort by arrival time
+      allBuses.sort((a, b) => a.arrivalMinutes - b.arrivalMinutes);
+
+      // Find the next buses after current time
+      let nextBuses = allBuses.filter((bus) => bus.arrivalMinutes > currentMinutes);
+
+      // If no buses are found for today, show the first buses for tomorrow
+      if (nextBuses.length === 0 && allBuses.length > 0) {
+        nextBuses = allBuses.slice(0, 2);
+      }
+
+      // Limit to next 5 buses
+      return nextBuses.slice(0, 5);
+    }
+
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+
+    // Main App Component
+    function App() {
+      const [currentTime, setCurrentTime] = React.useState(new Date());
+      const [location, setLocation] = React.useState("neluwa");
+      const [filter, setFilter] = React.useState("all");
+      const [notificationsEnabled, setNotificationsEnabled] = React.useState(false);
+      const [leadTime, setLeadTime] = React.useState(10);
+      const [isDarkMode, setIsDarkMode] = React.useState(false);
+      const [activeTab, setActiveTab] = React.useState("upcoming");
+
+      // Update current time every minute
+      React.useEffect(() => {
+        const timer = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 60000);
+        
+        return () => clearInterval(timer);
+      }, []);
+
+      // Check for dark mode preference
+      React.useEffect(() => {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        setIsDarkMode(prefersDark);
+        
+        if (prefersDark) {
+          document.documentElement.classList.add("dark");
+        }
+      }, []);
+
+      // Toggle dark mode
+      const toggleDarkMode = () => {
+        setIsDarkMode(!isDarkMode);
+        document.documentElement.classList.toggle("dark");
+      };
+
+      // Get next buses
+      const nextBuses = getNextBuses(filter, location, currentTime);
+
+      return React.createElement(
+        "div",
+        { 
+          className: `min-h-screen bg-background text-foreground bg-[url('https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?q=80&w=2070')] bg-fixed bg-cover`
+        },
+        [
+          // Current Time Display
+          React.createElement(
+            "div",
+            { 
+              className: "bg-primary text-primary-foreground p-4 sticky top-0 z-10 shadow-md",
+              key: "header"
+            },
+            React.createElement(
+              "div",
+              { className: "container mx-auto flex justify-between items-center" },
+              [
+                React.createElement(
+                  "div",
+                  { className: "flex items-center gap-2", key: "time-display" },
+                  [
+                    React.createElement("i", { 
+                      "data-lucide": "clock",
+                      className: "h-6 w-6",
+                      key: "clock-icon"
+                    }),
+                    React.createElement(
+                      "div",
+                      { key: "time-text" },
+                      [
+                        React.createElement(
+                          "div",
+                          { className: "text-xl font-bold", key: "current-time" },
+                          formatTime(currentTime)
+                        ),
+                        React.createElement(
+                          "div",
+                          { className: "text-xs", key: "current-date" },
+                          formatDate(currentTime)
+                        )
+                      ]
+                    )
+                  ]
+                ),
+                React.createElement(
+                  "button",
+                  { 
+                    className: "bg-primary-foreground/10 p-2 rounded-md",
+                    onClick: toggleDarkMode,
+                    key: "theme-toggle"
+                  },
+                  isDarkMode ? "☀️" : "🌙"
+                )
+              ]
+            )
+          ),
+
+          // Main Content
+          React.createElement(
+            "main",
+            { 
+              className: "container mx-auto p-4 space-y-6 relative z-10 backdrop-blur-sm bg-background/70 rounded-lg my-6",
+              key: "main-content"
+            },
+            [
+              // App Title
+              React.createElement(
+                "h1",
+                { className: "text-3xl font-bold flex items-center gap-2", key: "app-title" },
+                [
+                  React.createElement(
+                    "div",
+                    { 
+                      className: "relative w-12 h-12 overflow-hidden rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 p-0.5",
+                      key: "app-logo"
+                    },
+                    React.createElement(
+                      "div",
+                      { className: "absolute inset-0 flex items-center justify-center" },
+                      React.createElement("i", { 
+                        "data-lucide": "bus",
+                        className: "h-6 w-6 text-white"
+                      })
+                    )
+                  ),
+                  "Village Bus Notification App"
+                ]
+              ),
+
+              // Location Selection
+              React.createElement(
+                "div",
+                { 
+                  className: "bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden",
+                  key: "location-selection"
+                },
+                [
+                  React.createElement(
+                    "div",
+                    { className: "p-4 border-b" },
+                    React.createElement(
+                      "h2",
+                      { className: "text-lg font-semibold flex items-center gap-2" },
+                      [
+                        React.createElement("i", { 
+                          "data-lucide": "map-pin",
+                          className: "h-5 w-5 text-primary"
+                        }),
+                        "Your Current Location"
+                      ]
+                    )
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "grid grid-cols-5 gap-2 p-4" },
+                    Object.entries(locationNames).map(([key, name]) => 
+                      React.createElement(
+                        "div",
+                        { 
+                          className: `relative cursor-pointer rounded-lg overflow-hidden transition-all ${
+                            location === key ? 'ring-2 ring-primary scale-105' : 'opacity-70 hover:opacity-100'
+                          }`,
+                          onClick: () => setLocation(key),
+                          key: key
+                        },
+                        [
+                          React.createElement("img", {
+                            src: `https://images.unsplash.com/photo-${
+                              key === "neluwa" ? "1518457607834-6e8d80c183c5?q=80&w=1974" :
+                              key === "mawanana" ? "1506905925346-21bda4d32df4?q=80&w=2070" :
+                              key === "suduallawa" ? "1501785888041-af3ef285b470?q=80&w=2070" :
+                              key === "habarkada" ? "1470770841072-f978cf4d019e?q=80&w=2070" :
+                              "1510797215324-95aa89f43c33?q=80&w=2035"
+                            }`,
+                            alt: name,
+                            className: "w-full aspect-square object-cover"
+                          }),
+                          React.createElement(
+                            "div",
+                            { className: "absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end justify-center p-1" },
+                            React.createElement(
+                              "span",
+                              { className: "text-white text-xs font-medium" },
+                              name
+                            )
+                          )
+                        ]
+                      )
+                    )
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "p-4" },
+                    React.createElement(
+                      "select",
+                      { 
+                        className: "w-full p-2 border rounded-md bg-white dark:bg-gray-700",
+                        value: location,
+                        onChange: (e) => setLocation(e.target.value)
+                      },
+                      Object.entries(locationNames).map(([key, name]) => 
+                        React.createElement(
+                          "option",
+                          { value: key, key: key },
+                          name
+                        )
+                      )
+                    )
+                  )
+                ]
+              ),
+
+              // Notification Settings
+              React.createElement(
+                "div",
+                { 
+                  className: "bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden",
+                  key: "notification-settings"
+                },
+                [
+                  React.createElement(
+                    "div",
+                    { className: "p-4 border-b" },
+                    React.createElement(
+                      "h2",
+                      { className: "text-lg font-semibold flex items-center gap-2" },
+                      [
+                        React.createElement("i", { 
+                          "data-lucide": "bell",
+                          className: "h-5 w-5 text-primary"
+                        }),
+                        "Bus Notifications"
+                      ]
+                    )
+                  ),
+                  React.createElement(
+                    "div",
+                    { className: "p-4 space-y-4" },
+                    [
+                      React.createElement(
+                        "div",
+                        { className: "flex items-center justify-between" },
+                        [
+                          React.createElement(
+                            "label",
+                            { className: "flex-1" },
+                            "Receive alerts before buses reach your location"
+                          ),
+                          React.createElement(
+                            "div",
+                            { className: "relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full cursor-pointer" },
+                            [
+                              React.createElement("input", {
+                                type: "checkbox",
+                                className: "absolute w-0 h-0 opacity-0",
+                                checked: notificationsEnabled,
+                                onChange: () => setNotificationsEnabled(!notificationsEnabled)
+                              }),
+                              React.createElement(
+                                "span",
+                                { 
+                                  className: `absolute inset-0 transition-colors duration-200 rounded-full ${
+                                    notificationsEnabled ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'
+                                  }`
+                                }
+                              ),
+                              React.createElement(
+                                "span",
+                                { 
+                                  className: `absolute left-1 top-1 w-4 h-4 transition-transform duration-200 transform bg-white rounded-full ${
+                                    notificationsEnabled ? 'translate-x-6' : 'translate-x-0'
+                                  }`
+                                }
+                              )
+                            ]
+                          )
+                        ]
+                      ),
+                      React.createElement(
+                        "div",
+                        { className: "space-y-2" },
+                        [
+                          React.createElement(
+                            "label",
+                            { className: "block text-sm font-medium" },
+                            "Notification lead time"
+                          ),
+                          React.createElement(
+                            "select",
+                            { 
+                              className: "w-full p-2 border rounded-md bg-white dark:bg-gray-700",
+                              value: leadTime,
+                              onChange: (e) => setLeadTime(Number(e.target.value)),
+                              disabled: !notificationsEnabled
+                            },
+                            [
+                              React.createElement(
+                                "option",
+                                { value: "5" },
+                                "5 minutes before arrival"
+                              ),
+                              React.createElement(
+                                "option",
+                                { value: "10" },
+                                "10 minutes before arrival"
+                              ),
+                              React.createElement(
+                                "option",
+                                { value: "15" },
+                                "15 minutes before arrival"
+                              )
+                            ]
+                          )
+                        ]
+                      )
+                    ]
+                  )
+                ]
+              ),
+
+              // Tabs
+              React.createElement(
+                "div",
+                { className: "bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden", key: "tabs" },
+                [
+                  React.createElement(
+                    "div",
+                    { className: "flex border-b" },
+                    [
+                      React.createElement(
+                        "button",
+                        { 
+                          className: `flex items-center gap-2 px-4 py-3 font-medium ${
+                            activeTab === "upcoming" 
+                              ? "border-b-2 border-primary text-primary" 
+                              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                          }`,
+                          onClick: () => setActiveTab("upcoming")
+                        },
+                        [
+                          React.createElement("i", { 
+                            "data-lucide": "bus",
+                            className: "h-4 w-4"
+                          }),
+                          "Upcoming Buses"
+                        ]
+                      ),
+                      React.createElement(
+                        "button",
+                        { 
+                          className: `flex items-center gap-2 px-4 py-3 font-medium ${
+                            activeTab === "timetable" 
+                              ? "border-b-2 border-primary text-primary" 
+                              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                          }`,
+                          onClick: () => setActiveTab("timetable")
+                        },
+                        [
+                          React.createElement("i", { 
+                            "data-lucide": "calendar",
+                            className: "h-4 w-4"
+                          }),
+                          "Full Timetable"
+                        ]
+                      )
+                    ]
+                  ),
+
+                  // Upcoming Buses Tab Content
+                  activeTab === "upcoming" && React.createElement(
+                    "div",
+                    { className: "p-4 space-y-4" },
+                    [
+                      // Filters
+                      React.createElement(
+                        "div",
+                        { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-2" },
+                        [
+                          // All Routes Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-slate-200 hover:bg-slate-300 transition-colors ${
+                                filter === "all" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("all")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "All Routes"
+                              )
+                            )
+                          ),
+
+                          // Galle Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-emerald-200 hover:bg-emerald-300 transition-colors ${
+                                filter === "galle" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("galle")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "Galle"
+                              )
+                            )
+                          ),
+
+                          // Udugama Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-blue-200 hover:bg-blue-300 transition-colors ${
+                                filter === "udugama" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("udugama")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "Udugama"
+                              )
+                            )
+                          ),
+
+                          // Dellawa Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-amber-200 hover:bg-amber-300 transition-colors ${
+                                filter === "dellawa" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("dellawa")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "Dellawa"
+                              )
+                            )
+                          ),
+
+                          // CTB Only Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-sky-200 hover:bg-sky-300 transition-colors ${
+                                filter === "ctb" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("ctb")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "CTB Only"
+                              )
+                            )
+                          ),
+
+                          // Private Only Filter
+                          React.createElement(
+                            "div",
+                            { 
+                              className: `cursor-pointer rounded-lg overflow-hidden relative h-16 bg-rose-200 hover:bg-rose-300 transition-colors ${
+                                filter === "private" ? 'ring-2 ring-primary' : ''
+                              }`,
+                              onClick: () => setFilter("private")
+                            },
+                            React.createElement(
+                              "div",
+                              { className: "absolute inset-0 flex items-center justify-center" },
+                              React.createElement(
+                                "span",
+                                { className: "font-medium text-sm" },
+                                "Private Only"
+                              )
+                            )
+                          )
+                        ]
+                      ),
+
+                      // Next Buses List
+                      React.createElement(
+                        "div",
+                        { className: "bg-white dark:bg-gray-800 rounded-lg border p-4" },
+                        [
+                          React.createElement(
+                            "h3",
+                            { className: "text-lg font-semibold mb-4" },
+                            "Next Available Buses"
+                          ),
+                          nextBuses.length > 0 
+                            ? React.createElement(
+                                "div",
+                                { className: "space-y-4" },
+                                nextBuses.map((bus, index) => {
+                                  const minutesUntilDeparture = getMinutesUntil(bus.departureTime, currentTime);
+                                  const minutesUntilArrival = getMinutesUntil(bus.arrivalTime, currentTime);
+                                  const routeData = routeInfo[bus.route];
+
+                                  return React.createElement(
+                                    "div",
+                                    { 
+                                      className: "flex items-center justify-between p-3 rounded-lg border relative overflow-hidden",
+                                      key: index
+                                    },
+                                    [
+                                      React.createElement(
+                                        "div",
+                                        { 
+                                          className: "absolute inset-0 opacity-10",
+                                          style: {
+                                            background: `linear-gradient(135deg, ${
+                                              bus.route === "galle" ? "#10b981" : bus.route === "udugama" ? "#3b82f6" : "#f59e0b"
+                                            } 0%, transparent 70%)`
+                                          }
+                                        }
+                                      ),
+                                      React.createElement(
+                                        "div",
+                                        { className: "space-y-1 relative z-10" },
+                                        [
+                                          React.createElement(
+                                            "div",
+                                            { className: "flex items-center gap-2" },
+                                            [
+                                              React.createElement(
+                                                "div",
+                                                { 
+                                                  className: "w-8 h-8 rounded-full flex items-center justify-center",
+                                                  style: {
+                                                    background: bus.route === "galle" 
+                                                      ? "#10b981" 
+                                                      : bus.route === "udugama" 
+                                                        ? "#3b82f6" 
+                                                        : "#f59e0b"
+                                                  }
+                                                },
+                                                React.createElement("i", { 
+                                                  "data-lucide": "bus",
+                                                  className: "h-4 w-4 text-white"
+                                                })
+                                              ),
+                                              React.createElement(
+                                                "span",
+                                                { 
+                                                  className: `px-2 py-1 rounded-full text-xs font-semibold text-white ${routeData.color}`
+                                                },
+                                                routeData.name
+                                              ),
+                                              React.createElement(
+                                                "span",
+                                                { 
+                                                  className: `px-2 py-1 rounded-full text-xs font-semibold ${
+                                                    bus.operator === "CTB" 
+                                                      ? "bg-blue-500 text-white" 
+                                                      : "bg-red-500 text-white"
+                                                  }`
+                                                },
+                                                bus.operator
+                                              )
+                                            ]
+                                          ),
+                                          React.createElement(
+                                            "div",
+                                            { className: "font-medium" },
+                                            `Departs Neluwa: ${bus.departureTime}`
+                                          ),
+                                          React.createElement(
+                                            "div",
+                                            { className: "text-primary font-medium" },
+                                            `Arrives at ${locationNames[location]}: ${bus.arrivalTime}`
+                                          )
+                                        ]
+                                      ),
+                                      React.createElement(
+                                        "div",
+                                        { className: "text-right relative z-10" },
+                                        [
+                                          React.createElement(
+                                            "div",
+                                            { className: "text-sm text-muted-foreground" },
+                                            minutesUntilDeparture <= 0
+                                              ? "En route"
+                                              : `Departs in ${formatMinutesUntil(minutesUntilDeparture)}`
+                                          ),
+                                          React.createElement(
+                                            "div",
+                                            { className: "font-bold" },
+                                            minutesUntilArrival <= 0
+                                              ? "Arrived"
+                                              : `Arrives in ${formatMinutesUntil(minutesUntilArrival)}`
+                                          )
+                                        ]
+                                      )
+                                    ]
+                                  );
+                                })
+                              )
+                            : React.createElement(
+                                "div",
+                                { className: "text-center py-4 text-gray-500" },
+                                "No buses available with the current filter."
+                              )
+                        ]
+                      )
+                    ]
+                  ),
+
+                  // Full Timetable Tab Content
+                  activeTab === "timetable" && React.createElement(
+                    "div",
+                    { className: "p-4" },
+                    [
+                      React.createElement(
+                        "h3",
+                        { className: "text-lg font-semibold mb-4" },
+                        "Complete Bus Schedule"
+                      ),
+                      React.createElement(
+                        "div",
+                        { className: "overflow-x-auto" },
+                        React.createElement(
+                          "table",
+                          { className: "w-full border-collapse" },
+                          [
+                            React.createElement(
+                              "thead",
+                              null,
+                              [
+                                React.createElement(
+                                  "tr",
+                                  null,
+                                  [
+                                    React.createElement(
+                                      "th",
+                                      { 
+                                        colSpan: 2,
+                                        className: "bg-emerald-500 text-white p-2 text-center"
+                                      },
+                                      "Galle"
+                                    ),
+                                    React.createElement(
+                                      "th",
+                                      { 
+                                        colSpan: 2,
+                                        className: "bg-blue-500 text-white p-2 text-center"
+                                      },
+                                      "Udugama"
+                                    ),
+                                    React.createElement(
+                                      "th",
+                                      { 
+                                        colSpan: 2,
+                                        className: "bg-amber-500 text-white p-2 text-center"
+                                      },
+                                      "Dellawa"
+                                    )
+                                  ]
+                                ),
+                                React.createElement(
+                                  "tr",
+                                  null,
+                                  [
+                                    React.createElement("th", { className: "border p-2" }, "Time"),
+                                    React.createElement("th", { className: "border p-2" }, "Type"),
+                                    React.createElement("th", { className: "border p-2" }, "Time"),
+                                    React.createElement("th", { className: "border p-2" }, "Type"),
+                                    React.createElement("th", { className: "border p-2" }, "Time"),
+                                    React.createElement("th", { className: "border p-2" }, "Type")
+                                  ]
+                                )
+                              ]
+                            ),
+                            React.createElement(
+                              "tbody",
+                              null,
+                              Array.from({
+                                length: Math.max(
+                                  busSchedule.galle.length,
+                                  busSchedule.udugama.length,
+                                  busSchedule.dellawa.length
+                                )
+                              }).map((_, i) => 
+                                React.createElement(
+                                  "tr",
+                                  { 
+                                    key: i,
+                                    className: i % 2 === 0 ? "" : "bg-gray-50 dark:bg-gray-800"
+                                  },
+                                  [
+                                    // Galle
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.galle[i]?.time || ""
+                                    ),
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.galle[i]?.operator === "CTB"
+                                        ? React.createElement(
+                                            "span",
+                                            { className: "px-2 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white" },
+                                            "CTB"
+                                          )
+                                        : busSchedule.galle[i]?.operator === "Private"
+                                          ? React.createElement(
+                                              "span",
+                                              { className: "px-2 py-1 rounded-full text-xs font-semibold bg-red-500 text-white" },
+                                              "Private"
+                                            )
+                                          : ""
+                                    ),
+                                    
+                                    // Udugama
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.udugama[i]?.time || ""
+                                    ),
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.udugama[i]?.operator === "CTB"
+                                        ? React.createElement(
+                                            "span",
+                                            { className: "px-2 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white" },
+                                            "CTB"
+                                          )
+                                        : busSchedule.udugama[i]?.operator === "Private"
+                                          ? React.createElement(
+                                              "span",
+                                              { className: "px-2 py-1 rounded-full text-xs font-semibold bg-red-500 text-white" },
+                                              "Private"
+                                            )
+                                          : ""
+                                    ),
+                                    
+                                    // Dellawa
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.dellawa[i]?.time || ""
+                                    ),
+                                    React.createElement(
+                                      "td",
+                                      { className: "border p-2" },
+                                      busSchedule.dellawa[i]?.operator === "CTB"
+                                        ? React.createElement(
+                                            "span",
+                                            { className: "px-2 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white" },
+                                            "CTB"
+                                          )
+                                        : busSchedule.dellawa[i]?.operator === "Private"
+                                          ? React.createElement(
+                                              "span",
+                                              { className: "px-2 py-1 rounded-full text-xs font-semibold bg-red-500 text-white" },
+                                              "Private"
+                                            )
+                                          : ""
+                                    )
+                                  ]
+                                )
+                              )
+                            )
+                          ]
+                        )
+                      )
+                    ]
+                  )
+                ]
+              )
+            ]
+          ),
+
+          // Footer
+          React.createElement(
+            "footer",
+            { 
+              className: "bg-gray-100 dark:bg-gray-800 p-4 text-center text-sm text-gray-500 dark:text-gray-400",
+              key: "footer"
+            },
+            "© 2025 Village Bus Notification App. All rights reserved."
+          )
+        ]
+      );
+    }
+
+    // Render the App
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
+
